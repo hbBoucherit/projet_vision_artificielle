@@ -10,3 +10,5 @@
 
 # Model architecture / weights
 *.h5
+
+*.txt
