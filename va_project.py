@@ -8,6 +8,9 @@ import string
 import nltk 
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+nltk.download('stopwords')
+nltk.download('punkt')
+stop_words = set(stopwords.words('english'))
 
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
@@ -21,6 +24,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.applications import VGG16
 
 import re
+import gensim, logging
 
 #import keras
 #from keras.backend.tensorflow_backend import set_session
@@ -34,7 +38,7 @@ dataset_text_path  ="flickr8k/captions.txt"
 wanted_shape = (224,224,3)
 
 # To obtain the text dataset corresponding to images
-df_texts = pd.read_csv(dataset_text_path) #["image","caption"] 
+df_texts = pd.read_csv(dataset_text_path, sep=",") #["image","caption"] 
 n_img = df_texts.count()/5 # 40455/5 
 
 # To filter image column in df_texts so that images appear only one time
@@ -85,7 +89,6 @@ elif one_by_one:
     #    feature_maps.append(feature_map)
     #feature_maps=np.array(feature_maps)
 
-sentence = ["I have 3 dogs, BUT I prefer cats.", "Little Julien."]
 
 nltk.download('stopwords')
 nltk.download('punkt')
@@ -93,51 +96,56 @@ print(stopwords.words('english'))
 stop_words = set(stopwords.words('english')) 
 
 
-#Text preparation
-def text_pipeline(df_caption):
-    for caption in df_caption:
+#Text processing
+def process_sentence(sentence):
+    #Text preparation
+    def remove_stopwords(caption, stop_words=stop_words):
+        word_tokens = word_tokenize(caption)  
+        filtered_caption = " ".join([w for w in word_tokens if w not in stop_words])
+        return filtered_caption
+
+    # Add start and end sequence token
+    def add_start_end_seq_token(txt):
+        return 'startseq ' + txt + ' endseq'
+
+    def text_pipeline(caption):
         # lowercase
         caption = caption.lower()
+        caption = remove_stopwords(caption)
         # remove some punctuations
         caption = caption.replace(".", "")
         caption = caption.replace(",", "")
         # remove numeric values
         caption = re.sub("\d+", "", caption)
+        caption = add_start_end_seq_token(caption)
+        return caption
+    
+    return text_pipeline(sentence)
 
-    return df_caption
-
-sentence=text_pipeline(sentence)
-
-def remove_stopwords(df_caption, stop_words=stop_words):
-    word_tokens = word_tokenize(caption)  
-    filtered_caption = "".join([w for w in word_tokens if w not in stop_words])
-    return filtered_caption
-
-sentence = remove_stopwords(sentence)
-print(f"Stop words elimination : {sentence}")
-
-# Add start and end sequence token
-def add_start_end_seq_token(df_captions):
-    captions = []
-    for txt in df_captions:
-        txt = 'startseq ' + txt + ' endseq'
-        captions.append(txt)
-    return captions
-
-print(add_start_end_seq_token(sentence))
-df_texts0 = df_texts.copy()
-df_texts0["caption"] = add_start_end_seq_token(df_texts["caption"])
-df_texts0.head(5)
 
 # Change character vector to integer vector
-tokenizer = Tokenizer(nb_words=10000)
-tokenizer.fit_on_texts(df_texts0["caption"])
+# Embedding
+def character_to_integer_vector(df_texts):
+    tokenizer = Tokenizer(num_words=10000)
+    tokenizer.fit_on_texts(df_texts) #list of captions to train on
+    #print("size of the dictionary : " + len(tokenizer.word_index) +1)
+    return tokenizer.texts_to_sequences(df_texts)
 
 
+df_texts["cleaned"]=[process_sentence(s) for s in df_texts["caption"]]
+df_texts["tokenized"]=character_to_integer_vector(df_texts["cleaned"])
+print(df_texts.head(5))
 
-#remove stop words
-'''
-['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', "you're", "you've", "you'll", "you'd", 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 'her', 'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this', 'that', "that'll", 'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', "don't", 'should', "should've", 'now', 'd', 'll', 'm', 'o', 're', 've', 'y', 'ain', 'aren', "aren't", 'couldn', "couldn't", 'didn', "didn't", 'doesn', "doesn't", 'hadn', "hadn't", 'hasn', "hasn't", 'haven', "haven't", 'isn', "isn't", 'ma', 'mightn', "mightn't", 'mustn', "mustn't", 'needn', "needn't", 'shan', "shan't", 'shouldn', "shouldn't", 'wasn', "wasn't", 'weren', "weren't", 'won', "won't", 'wouldn', "wouldn't"]
-Stop words elimination : I 3 dogs , BUT I prefer cats .
-['startseq i endseq', 'startseq   endseq', 'startseq   endseq', 'startseq d endseq', 'startseq o endseq', 'startseq g endseq', 'startseq s endseq', 'startseq   endseq', 'startseq   endseq', 'startseq b endseq', 'startseq u endseq', 'startseq t endseq', 'startseq   endseq', 'startseq i endseq', 'startseq   endseq', 'startseq p endseq', 'startseq r endseq', 'startseq e endseq', 'startseq f endseq', 'startseq e endseq', 'startseq r endseq', 'startseq   endseq', 'startseq c endseq', 'startseq a endseq', 'startseq t endseq', 'startseq s endseq', 'startseq   endseq']
-'''
+
+# Word2Vec - si ça ne marche pas, on fait ce qu'a fait Fairyonice
+#START WORD2VEC
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+# train word2vec on the two sentences
+model = gensim.models.Word2Vec([word_tokenize(w) for w in df_texts["cleaned"]], min_count=1, size=4096)
+
+print(model["girl"].shape)
+print(model["boy"].shape)
+print(f"Similarité : {model.similarity('girl', 'boy')}")
+#END WORD2VEC
+
+# ACP pour faire correspondre les dimensions du texte et image
