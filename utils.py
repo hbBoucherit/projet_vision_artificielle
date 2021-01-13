@@ -30,6 +30,16 @@ import PIL
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.utils import to_categorical
 
+# Location of the Flickr8k images and caption files
+dataset_image_path ="flickr8k/Images/"
+dataset_text_path  ="flickr8k/captions.txt" 
+wanted_shape = (224,224,3)
+
+# To obtain the text dataset corresponding to images
+df_texts = pd.read_csv(dataset_text_path, sep=",") #["image","caption"] 
+n_img = df_texts.count()/5 # 40455/5 
+unique_img = pd.unique(df_texts["image"])# 8091 unique images
+
 # Function to crop images
 def crop_center(img):
     cropx, cropy, _ = wanted_shape
@@ -91,7 +101,6 @@ def word2vec(df_texts,model):
     # Need a cleaned category in df_texts
     return [model[w] for w in df_texts["cleaned_tokenized"] ]
 
-# Word2Vec - si ça ne marche pas, on fait ce qu'a fait Fairyonice
 #START WORD2VEC
 #print(model["girl"].shape)
 #print(model["boy"].shape)
