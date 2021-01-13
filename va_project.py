@@ -1,7 +1,7 @@
-from .utils import *
+from utils import *
 from keras import layers 
 from tensorflow.keras.models import Sequential, Model, Model
-from tensorflow.keras.layers import LSTM, Embeddings, Input, add
+from tensorflow.keras.layers import LSTM, Embedding, Input, add
 
 """
 CHARGEMENT DES DONNES ET CONFIGURATION
@@ -74,6 +74,7 @@ di_test, di_val, di_train = split_test_val_train(dimages, Ntest, Nval)
 fnm_test, fnm_val, fnm_train = split_test_val_train(df_text["image"], Ntest, Nval)
 
 vocab_size = len(model.wv.vocab)
+print("vocab size : ", vocab_size)
 
 Xtext_train, Ximage_train, ytext_train = finalpreprocessing(dt_train, di_train, vocab_size) 
 Xtext_val, Ximage_val, ytext_val = finalpreprocessing(dt_val, di_val, vocab_size)
@@ -85,10 +86,10 @@ MODEL
 dim_embedding=64
 
 # image input
-input_img = Input(shape=(Ximage_train.shape[1],), name="InputImage") )
+input_img = Input(shape=(Ximage_train.shape[1],), name="InputImage") 
 input_img = ( Dense(units=256,activation='relu',name="CompressedImageFeatures") )(input_img)
 # text input
-input_txt = Input(shape=(maxlen,), name="InputSequence"))
+input_txt = Input(shape=(maxlen,), name="InputSequence")
 input_txt = ( Embedding(vocab_size,dim_embedding, mask_zero=True))(input_txt)
 input_txt = ( LSTM(units=8, activation="relu", name="CaptionFeatures") )(input_txt)
 
@@ -110,8 +111,8 @@ hist = model.fit([Ximage_train, Xtext_train], ytext_train, epochs=5, verbose=2, 
 '''
 MODEL EVALUATION (VALIDATION AND TRAINING LOSS OVER EPOCHS)
 '''
-for label in ["loss", "val_loss":
-    plt.plot(hist.history[label], label=label)]
+for label in ["loss", "val_loss"]:
+    plt.plot(hist.history[label], label=label)
 plt.legend()
 plt.xlabel("Epochs")
 plt.ylabel("Loss")
