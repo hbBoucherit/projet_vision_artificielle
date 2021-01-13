@@ -89,7 +89,7 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
 # train word2vec on the two sentences
 def word2vec(df_texts,model):
     # Need a cleaned category in df_texts
-    return [model[w] for w in df_texts["cleaned"] ]
+    return [model[w] for w in df_texts["cleaned_tokenized"] ]
 
 # Word2Vec - si ça ne marche pas, on fait ce qu'a fait Fairyonice
 #START WORD2VEC
@@ -116,3 +116,9 @@ def finalpreprocessing(dftext, dfimage, vocab_size):
     Ximage = np.array(Ximage)
     ytext = np.array(ytext)
     return(Xtext, Ximage, ytext)
+
+# Split dataset
+def split_test_val_train(df, Ntest, Nval):
+    return(df[:Ntest],
+           df[Ntest:Ntest+Nval],
+           df[Ntest+Nval:])
