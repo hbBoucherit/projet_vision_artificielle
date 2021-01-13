@@ -99,7 +99,7 @@ def word2vec(df_texts,model):
 #END WORD2VEC
 
 def finalpreprocessing(dftext, dfimage, vocab_size):
-    print("# captions/images = {}".format(len(dtext)))
+    print("# captions/images = {}".format(len(dftext)))
     assert(len(dftext)==len(dfimage)) # return error if len(text) != len(image)
 
     maxlen = np.max([len(text) for text in dftext])
