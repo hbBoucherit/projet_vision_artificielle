@@ -100,7 +100,7 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
 # train word2vec on the two sentences
 def word2vec(df_texts,model):
     # Need a cleaned_tokenized category in df_texts
-    return np.array([model[w] for w in df_texts["cleaned_tokenized"]])
+    return [model[w] for w in df_texts["cleaned_tokenized"]]
 
 #START WORD2VEC
 #print(model["girl"].shape)
