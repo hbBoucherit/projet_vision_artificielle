@@ -9,7 +9,6 @@
 *.zip
 
 # Model architecture / weights
-*.h5
 *.model
 *.npy
 
