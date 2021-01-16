@@ -19,7 +19,7 @@ from tensorflow.keras.applications.vgg16 import preprocess_input
 from tensorflow.keras.applications.vgg16 import preprocess_input
 from collections import OrderedDict
 
-from tensorflow.keras.models import Model
+from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.applications import VGG16
 
@@ -97,6 +97,20 @@ def character_to_integer_vector(df_texts):
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 '''
 
+def multiple_feature_maps(dimages):
+    Ximage = []
+    for image in dimages:
+        for i in range (5):
+            Ximage.append(image)
+    Ximage=np.array(Ximage)
+    return Ximage
+
+# split dataset
+def split_test_val_train(df, Ntest, Nval):
+    return(df[:Ntest],
+           df[Ntest:Ntest+Nval],
+           df[Ntest+Nval:])
+
 # train word2vec on the two sentences
 def word2vec(df_texts,model):
     # Need a cleaned_tokenized category in df_texts
@@ -108,27 +122,48 @@ def word2vec(df_texts,model):
 #print(f"Similarité : {model.similarity('girl', 'boy')}")
 #END WORD2VEC
 
-def finalpreprocessing(dftext, dfimage, vocab_size):
+def finalpreprocessing(dftext, dfimage, vocab_size, maxlen):
     print("# captions/images = {}".format(len(dftext)))
-    assert(len(dftext)==len(dfimage)) # return error if len(text) != len(image)
-
-    maxlen = np.max([len(text) for text in dftext])
+    
     Xtext, Ximage, ytext = [], [], []
+    step = 0
     for text, image in zip(dftext, dfimage):
+        step += 1
         for i in range(1, len(text)):
             in_text, out_text = text[:i], text[i]
             in_text = pad_sequences([in_text], maxlen=maxlen).flatten()
             out_text = to_categorical(out_text, num_classes = vocab_size)
+            
             Xtext.append(in_text)
             Ximage.append(image)
             ytext.append(out_text)
+    print(f"Number of step/associated image and caption {step}")
+    
     Xtext = np.array(Xtext)
     Ximage = np.array(Ximage)
     ytext = np.array(ytext)
-    return(Xtext, Ximage, ytext)
+    
+    return(Xtext, Ximage, ytext, maxlen)
 
 # Split dataset
 def split_test_val_train(df, Ntest, Nval):
     return(df[:Ntest],
            df[Ntest:Ntest+Nval],
            df[Ntest+Nval:])
+
+# Make predictions on image
+def predict_caption(model, image, maxlen):
+    in_text = 'startseq'
+    tokenizer = Tokenizer(nb_words=8000)
+    index_word = dict([(index,word) for word, index in tokenizer.word_index.items()])
+
+    for iword in range(maxlen):
+        sequence = tokenizer.texts_to_sequences([in_text])[0]
+        sequence = pad_sequences([sequence],maxlen)
+        yhat = model.predict([image,sequence],verbose=0)
+        yhat = np.argmax(yhat)
+        newword = index_word[yhat]
+        in_text += " " + newword
+        if newword == "endseq":
+            break
+    return(in_text)
