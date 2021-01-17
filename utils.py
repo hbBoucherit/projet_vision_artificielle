@@ -143,27 +143,10 @@ def finalpreprocessing(dftext, dfimage, vocab_size, maxlen):
     Ximage = np.array(Ximage)
     ytext = np.array(ytext)
     
-    return(Xtext, Ximage, ytext, maxlen)
+    return(Xtext, Ximage, ytext)
 
 # Split dataset
 def split_test_val_train(df, Ntest, Nval):
     return(df[:Ntest],
            df[Ntest:Ntest+Nval],
            df[Ntest+Nval:])
-
-# Make predictions on image
-def predict_caption(model, image, maxlen):
-    in_text = 'startseq'
-    tokenizer = Tokenizer(nb_words=8000)
-    index_word = dict([(index,word) for word, index in tokenizer.word_index.items()])
-
-    for iword in range(maxlen):
-        sequence = tokenizer.texts_to_sequences([in_text])[0]
-        sequence = pad_sequences([sequence],maxlen)
-        yhat = model.predict([image,sequence],verbose=0)
-        yhat = np.argmax(yhat)
-        newword = index_word[yhat]
-        in_text += " " + newword
-        if newword == "endseq":
-            break
-    return(in_text)
